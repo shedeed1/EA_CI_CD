@@ -1,0 +1,2 @@
+json_file = ENV['GOOGLE_JSON_FILE']
+json_key_file(json_file) unless !json_file || json_file.strip.empty?

@@ -1,0 +1,98 @@
+before_all do |_, _|
+  setup_circle_ci if is_ci
+end
+
+# android start
+platform :android do
+  desc 'Build and publish an Android build'
+  lane :deploy do |options|
+    gradle(
+      task: 'clean',
+    )
+
+    task = 'assemble'
+    build_type = 'Release'
+    flavor = ENV['ANDROID_FLAVOR']
+    properties = get_build_properties
+
+    gradle(
+      task: task,
+      build_type: build_type,
+      flavor: flavor,
+      properties: properties
+    )
+
+    firebase_app_distribution(
+        app: ENV['FIREBASE_APP_ID'],
+        service_credentials_file: ENV['GOOGLE_JSON_FILE'],
+        android_artifact_type: 'APK',
+        release_notes: "Lots of amazing new features to test out!",
+        groups: "forum-internal-testing-group",
+        android_artifact_path: lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH],
+        debug: true
+    )
+  end
+end
+# end android
+
+private_lane :get_build_properties do
+  skip_signing = parse_boolean(ENV['ANDROID_SKIP_SIGNING'], false)
+
+  android_env_vars = %w[ANDROID_STORE_FILE ANDROID_STORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD]
+  ensure_env_vars(env_vars: android_env_vars) unless skip_signing
+
+  properties = {}
+
+  # Set signing variables optionally, let the build process fail if any of them is not set
+  store_file = ENV['ANDROID_STORE_FILE']
+  properties['android.injected.signing.store.file'] = store_file if !skip_signing && !blank?(store_file)
+
+  store_password = ENV['ANDROID_STORE_PASSWORD']
+  properties['android.injected.signing.store.password'] = store_password if !skip_signing && !blank?(store_password)
+
+  key_alias = ENV['ANDROID_KEY_ALIAS']
+  properties['android.injected.signing.key.alias'] = key_alias if !skip_signing && !blank?(key_alias)
+
+  key_password = ENV['ANDROID_KEY_PASSWORD']
+  properties['android.injected.signing.key.password'] = key_password if !skip_signing && !blank?(key_password)
+
+  # Fetch latest version code from Firebas app distribution
+  latest_release = firebase_app_distribution_get_latest_release(
+     app: ENV['FIREBASE_APP_ID'],
+     service_credentials_file: ENV['GOOGLE_JSON_FILE']
+  )
+
+  # Overwrite version.code property if build number environment variable is a valid number
+  # If it's not a valid number, we increment the latest version code from Firebase app distribution
+  build_number = ENV['APP_BUILD_NUMBER']
+  is_build_number_valid = !blank?(build_number) && !Integer(build_number.strip, exception: false).nil?
+  properties['versionCode'] = is_build_number_valid == true ? build_number : latest_release[:buildVersion].to_i + 1
+
+  build_name = ENV['APP_BUILD_NAME']
+  is_build_name_valid = !blank?(build_name)
+  properties['versionName'] = build_name if is_build_name_valid
+
+  properties
+end
+
+def parse_boolean(value, default)
+  value = value&.downcase&.strip
+  blank?(value) ? default : %w[yes true 1].include?(value)
+end
+
+def blank?(obj)
+  return obj.strip.empty? if obj.is_a?(String)
+  obj.respond_to?(:empty?) ? obj.empty? : !obj
+end
+
+def safe_fetch_version_codes(package_name, track)
+  begin
+    google_play_track_version_codes(
+      track: track,
+      package_name: package_name,
+      json_key: ENV['GOOGLE_JSON_FILE']
+    )
+  rescue StandardError
+    [0]
+  end
+end
