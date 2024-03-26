@@ -1,4 +1,4 @@
-### App build number (Don't declare if you want it to be fetched from Firebase and incremented)
+### App build number (Don't declare if you want it to be fetched from Firebase/Google Play and incremented)
 APP_BUILD_NUMBER=1
 ### App build name
 APP_BUILD_NAME=1.0

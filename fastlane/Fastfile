@@ -4,8 +4,37 @@ end
 
 # android start
 platform :android do
-  desc 'Build and publish an Android build'
-  lane :deploy do |options|
+  desc 'Build and publish an Android build to Firebase'
+  lane :deploy_firebase do |options|
+    gradle(
+      task: 'clean',
+    )
+
+    task = 'assemble'
+    build_type = 'Release'
+    flavor = ENV['ANDROID_FLAVOR']
+    properties = get_build_properties(firebase: true)
+
+    gradle(
+      task: task,
+      build_type: build_type,
+      flavor: flavor,
+      properties: properties
+    )
+
+    firebase_app_distribution(
+      app: ENV['FIREBASE_APP_ID'],
+      service_credentials_file: ENV['GOOGLE_JSON_FILE'],
+      android_artifact_type: 'APK',
+      release_notes: "Lots of amazing new features to test out!",
+      groups: "forum-internal-testing-group",
+      android_artifact_path: lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH],
+      debug: true
+    )
+  end
+
+  desc 'Build and publish an Android build to Google Play'
+  lane :deploy_google_play do |options|
     gradle(
       task: 'clean',
     )
@@ -22,20 +51,17 @@ platform :android do
       properties: properties
     )
 
-    firebase_app_distribution(
-        app: ENV['FIREBASE_APP_ID'],
-        service_credentials_file: ENV['GOOGLE_JSON_FILE'],
-        android_artifact_type: 'APK',
-        release_notes: "Lots of amazing new features to test out!",
-        groups: "forum-internal-testing-group",
-        android_artifact_path: lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH],
-        debug: true
+    upload_to_play_store(
+      track: 'internal',
+      package_name: ENV['ANDROID_PACKAGE_NAME'],
+      track_promote_to: 'internal',
+      release_status: 'draft'
     )
   end
 end
 # end android
 
-private_lane :get_build_properties do
+private_lane :get_build_properties do |options|
   skip_signing = parse_boolean(ENV['ANDROID_SKIP_SIGNING'], false)
 
   android_env_vars = %w[ANDROID_STORE_FILE ANDROID_STORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD]
@@ -43,7 +69,6 @@ private_lane :get_build_properties do
 
   properties = {}
 
-  # Set signing variables optionally, let the build process fail if any of them is not set
   store_file = ENV['ANDROID_STORE_FILE']
   properties['android.injected.signing.store.file'] = store_file if !skip_signing && !blank?(store_file)
 
@@ -56,17 +81,31 @@ private_lane :get_build_properties do
   key_password = ENV['ANDROID_KEY_PASSWORD']
   properties['android.injected.signing.key.password'] = key_password if !skip_signing && !blank?(key_password)
 
-  # Fetch latest version code from Firebas app distribution
-  latest_release = firebase_app_distribution_get_latest_release(
-     app: ENV['FIREBASE_APP_ID'],
-     service_credentials_file: ENV['GOOGLE_JSON_FILE']
-  )
+  if options[:firebase]
+    latest_release = firebase_app_distribution_get_latest_release(
+      app: ENV['FIREBASE_APP_ID'],
+      service_credentials_file: ENV['GOOGLE_JSON_FILE']
+    )
+    build_number = ENV['APP_BUILD_NUMBER']
+    is_build_number_valid = !blank?(build_number) && !Integer(build_number.strip, exception: false).nil?
+    properties['versionCode'] = is_build_number_valid == true ? build_number : latest_release[:buildVersion].to_i + 1
+  else
+    productionVersionCodes = safe_fetch_version_codes(ENV['ANDROID_PACKAGE_NAME'],'production')
+    betaVersionCodes = safe_fetch_version_codes(ENV['ANDROID_PACKAGE_NAME'], 'beta')
+    alphaVersionCodes = safe_fetch_version_codes(ENV['ANDROID_PACKAGE_NAME'], 'alpha')
+    internalVersionCodes = safe_fetch_version_codes(ENV['ANDROID_PACKAGE_NAME'], 'internal')
 
-  # Overwrite version.code property if build number environment variable is a valid number
-  # If it's not a valid number, we increment the latest version code from Firebase app distribution
-  build_number = ENV['APP_BUILD_NUMBER']
-  is_build_number_valid = !blank?(build_number) && !Integer(build_number.strip, exception: false).nil?
-  properties['versionCode'] = is_build_number_valid == true ? build_number : latest_release[:buildVersion].to_i + 1
+    versionCodes = [
+      productionVersionCodes,
+      betaVersionCodes,
+      alphaVersionCodes,
+      internalVersionCodes
+    ].reduce([], :concat)
+
+    build_number = ENV['APP_BUILD_NUMBER']
+    is_build_number_valid = !blank?(build_number) && !Integer(build_number.strip, exception: false).nil?
+    properties['versionCode'] = is_build_number_valid == true ? build_number : versionCodes.max + 1
+  end
 
   build_name = ENV['APP_BUILD_NAME']
   is_build_name_valid = !blank?(build_name)
