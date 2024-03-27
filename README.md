@@ -15,7 +15,7 @@
    - Copy fastlane folder and paste it in your project root folder
 
 3. **Configure Environment variables**
-   - Create `.env` file in your project root folder.
+   - Create `.env.production` & `.env.staging` files in your project root folder.
    - Modify the environment variables to match your app **Note** If you leave `APP_BUILD_NUMBER` empty, the script will fetch the latest version code from Firebase or Google Play Store and increment that.
 
 4. **Update App gradle file to ensure proper version code injection:**
@@ -40,16 +40,26 @@
 | `ANDROID_KEY_PASSWORD` | Android Key Password | [Android Signing Docs](https://developer.android.com/studio/publish/app-signing) |
 | `GOOGLE_JSON_FILE`            | Google service credential key json file path | [Fastlane Docs](https://docs.fastlane.tools/getting-started/android/setup/)                                           |
 | `FIREBASE_APP_ID`           | Firebase App ID                                  | Can be fetched from project settings in Firebase console |
+| `FIREBASE_GROUPS`           | Firebase Test Groups                              | Example: "qa-team, trusted-testers" |
+| `FIREBASE_RELEASE_NOTES`    | Firebase build release notes                              | Example: "New exciting features!" |
 
 
 ## How to Run the Fastlane script
 
 1. **Navigate to your project root folder.**
-2. **Run the following command if you want to push to Firebase App Distribution.**
+2. **Run the following command if you want to push to Firebase App Distribution using staging environment.**
   ```
-  firebase deploy_firebase
+  fastlane android deploy_firebase --env staging
   ```
-3. **Run the following command if you want to push to Google Play.**
+  Alternatively, you can choose to run the production environment
   ```
-  firebase deploy_google_play
+  fastlane android deploy_firebase --env production
+  ```
+3. **Run the following command if you want to push to Google Play using production environment.**
+  ```
+  fastlane android deploy_google_play --env production
+  ```
+  Alternatively, you can choose to run the staging environment
+  ```
+  fastlane android deploy_google_play --env staging
   ```
