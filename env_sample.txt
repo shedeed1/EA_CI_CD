@@ -21,4 +21,8 @@ ANDROID_KEY_PASSWORD='1234#1234'
 GOOGLE_JSON_FILE=/Users/user/app-418009-f033d8e71a9c.json
 ### Firebase App ID
 FIREBASE_APP_ID=1:515939758390:android:5936fce6186945e35c0397
+### Firebase Test Groups
+FIREBASE_GROUPS='forum-internal-testing-group'
+### Release notes
+FIREBASE_RELEASE_NOTES='Testing'
 

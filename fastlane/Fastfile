@@ -10,6 +10,8 @@ platform :android do
       task: 'clean',
     )
 
+    gradle(task: "test")
+
     task = 'assemble'
     build_type = 'Release'
     flavor = ENV['ANDROID_FLAVOR']
@@ -26,8 +28,8 @@ platform :android do
       app: ENV['FIREBASE_APP_ID'],
       service_credentials_file: ENV['GOOGLE_JSON_FILE'],
       android_artifact_type: 'APK',
-      release_notes: "Lots of amazing new features to test out!",
-      groups: "forum-internal-testing-group",
+      release_notes: ENV["FIREBASE_RELEASE_NOTES"] || "",
+      groups: ENV['FIREBASE_GROUPS'],
       android_artifact_path: lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH],
       debug: true
     )
@@ -38,6 +40,8 @@ platform :android do
     gradle(
       task: 'clean',
     )
+
+     gradle(task: "test")
 
     task = 'assemble'
     build_type = 'Release'
@@ -51,11 +55,12 @@ platform :android do
       properties: properties
     )
 
+    track = flavor == 'staging' ? 'internal' : 'production'
+
     upload_to_play_store(
-      track: 'internal',
+      track: track,
       package_name: ENV['ANDROID_PACKAGE_NAME'],
-      track_promote_to: 'internal',
-      release_status: 'draft'
+      track_promote_to: track,
     )
   end
 end
