@@ -1,0 +1,49 @@
+version: 2.1
+
+orbs:
+  ruby: circleci/ruby@2.1.1 # Use the latest version of the ruby orb for Ruby tasks
+
+jobs:
+  build-and-release-android:
+    docker:
+      - image: cimg/android:2024.01
+    steps:
+      - checkout
+      - ruby/install-deps
+      - run:
+          name: Setup Google JSON Key
+          command: |
+            echo "$GOOGLE_JSON_KEY_BASE64" | base64 --decode > /home/circleci/__google_credentials.json
+      - run:
+          name: Setup Android Keystore
+          command: |
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > /home/circleci/__keystore.jks
+
+      - run:
+          name: Setup release notes for Firebase
+          command: |
+            # git settings
+            echo 'export FIREBASE_RELEASE_NOTES=$(git log --format="format:%s" -n 1 ${CIRCLE_SHA1})' >> $BASH_ENV
+            # finally import bash env
+            source $BASH_ENV
+
+      - run:
+          name: Assemble and Upload to Firebase
+          command: bundle exec fastlane android deploy_firebase
+          environment:
+            GOOGLE_JSON_FILE: /home/circleci/__google_credentials.json
+            ANDROID_STORE_FILE: /home/circleci/__keystore.jks
+
+      - run:
+          name: Assemble and Upload to PlayStore
+          command: bundle exec fastlane android deploy_google_play
+          environment:
+            GOOGLE_JSON_FILE: /home/circleci/__google_credentials.json
+            ANDROID_STORE_FILE: /home/circleci/__keystore.jks
+
+
+workflows:
+  version: 2
+  build-and-release:
+    jobs:
+      - build-and-release-android
