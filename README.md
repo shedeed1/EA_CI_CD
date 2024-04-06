@@ -98,8 +98,7 @@
 | `GOOGLE_JSON_KEY_BASE64`            | (Required) Google service credential key json file encoded as base64 | [Fastlane Docs](https://docs.fastlane.tools/getting-started/android/setup/)                                           |
 | `FIREBASE_APP_ID`           | (Required) Firebase App ID                                  | Can be fetched from project settings in Firebase console |
 | `FIREBASE_APP_ID_STAGING`           | (Required) Firebase App ID                                  | Can be fetched from project settings in Firebase console |
-| `FIREBASE_GROU
-PS`           | (Optional) Firebase Test Groups                              | Example: "qa-team, trusted-testers" |
+| `FIREBASE_GROUPS`           | (Optional) Firebase Test Groups                              | Example: "qa-team, trusted-testers" |
 
 7. **You'll have something similar to the below screenshot:**
 <img width="750" alt="image" src="https://github.com/shedeed1/EA_CI_CD/assets/26841936/75c7e14f-a6e1-4d7e-a798-2b7df6c5402c">
