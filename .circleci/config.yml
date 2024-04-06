@@ -11,13 +11,24 @@ jobs:
       - checkout
       - ruby/install-deps
       - run:
+          name: Read File and Set Env Var
+          command: |
+            echo 'export CIRCLECI_FLAVOR=$(cat .circleci_flavor)' >> $BASH_ENV
+            source $BASH_ENV
+
+      - run:
           name: Setup Google JSON Key
           command: |
             echo "$GOOGLE_JSON_KEY_BASE64" | base64 --decode > /home/circleci/__google_credentials.json
+
       - run:
           name: Setup Android Keystore
           command: |
-            echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > /home/circleci/__keystore.jks
+            if [ "$CIRCLECI_FLAVOR" = "staging" ]; then
+              echo "$ANDROID_KEYSTORE_BASE64_STAGING" | base64 --decode > /home/circleci/__keystore.jks
+            else
+              echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > /home/circleci/__keystore.jks
+            fi
 
       - run:
           name: Setup release notes for Firebase
@@ -29,14 +40,20 @@ jobs:
 
       - run:
           name: Assemble and Upload to Firebase
-          command: bundle exec fastlane android deploy_firebase
+          command: |
+            if [ "$CIRCLECI_FLAVOR" = "staging" ]; then
+              bundle exec fastlane android deploy_firebase
+            fi
           environment:
             GOOGLE_JSON_FILE: /home/circleci/__google_credentials.json
             ANDROID_STORE_FILE: /home/circleci/__keystore.jks
 
       - run:
           name: Assemble and Upload to PlayStore
-          command: bundle exec fastlane android deploy_google_play
+          command: |
+            if [ "$CIRCLECI_FLAVOR" = "production" ]; then
+              bundle exec fastlane android deploy_google_play
+            fi
           environment:
             GOOGLE_JSON_FILE: /home/circleci/__google_credentials.json
             ANDROID_STORE_FILE: /home/circleci/__keystore.jks

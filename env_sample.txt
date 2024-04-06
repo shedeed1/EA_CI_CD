@@ -1,10 +1,10 @@
 ### App build number (Don't declare if you want it to be fetched from Firebase/Google Play and incremented)
 APP_BUILD_NUMBER=1
-### App build name
+### App build name (Don't declare if you want it to be fetched from build.gradle)
 APP_BUILD_NAME=1.0
 ## Android application package name (required)
 ANDROID_PACKAGE_NAME=com.thirdbridge.forum_fpstg
-## Android build flavor
+## Android build flavor for local builds
 ANDROID_FLAVOR=staging
 ## Signing
 ### Whether or not to skip signing build (optional, defaults to false)

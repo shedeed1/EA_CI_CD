@@ -14,13 +14,14 @@ platform :android do
 
     task = 'assemble'
     build_type = 'Release'
+    circleci_flavor = is_ci ? File.read("../.circleci_flavor") : nil
     flavor = ENV['ANDROID_FLAVOR']
-    properties = get_build_properties(firebase: true)
+    properties = get_build_properties(firebase: true, circleci_flavor: circleci_flavor)
 
     gradle(
       task: task,
       build_type: build_type,
-      flavor: flavor,
+      flavor: is_ci ? circleci_flavor : flavor,
       properties: properties
     )
 
@@ -45,13 +46,14 @@ platform :android do
 
     task = 'assemble'
     build_type = 'Release'
+    circleci_flavor = is_ci ? File.read("../.circleci_flavor") : nil
     flavor = ENV['ANDROID_FLAVOR']
-    properties = get_build_properties
+    properties = get_build_properties(circleci_flavor: circleci_flavor)
 
     gradle(
       task: task,
       build_type: build_type,
-      flavor: flavor,
+      flavor: is_ci ? circleci_flavor : flavor,
       properties: properties
     )
 
@@ -59,7 +61,7 @@ platform :android do
 
     upload_to_play_store(
       track: track,
-      package_name: ENV['ANDROID_PACKAGE_NAME'],
+      package_name: is_ci && circleci_flavor == 'staging' ? ENV['ANDROID_PACKAGE_NAME_STAGING'] : ENV['ANDROID_PACKAGE_NAME'],
       track_promote_to: track,
     )
   end
@@ -67,56 +69,105 @@ end
 # end android
 
 private_lane :get_build_properties do |options|
-  skip_signing = parse_boolean(ENV['ANDROID_SKIP_SIGNING'], false)
+    properties = {}
+    if is_ci && options[:circleci_flavor] == 'staging'
+        skip_signing = parse_boolean(ENV['ANDROID_SKIP_SIGNING_STAGING'], false)
 
-  android_env_vars = %w[ANDROID_STORE_FILE ANDROID_STORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD]
-  ensure_env_vars(env_vars: android_env_vars) unless skip_signing
+        android_env_vars = %w[ANDROID_STORE_FILE ANDROID_STORE_PASSWORD_STAGING ANDROID_KEY_ALIAS_STAGING ANDROID_KEY_PASSWORD_STAGING]
+        ensure_env_vars(env_vars: android_env_vars) unless skip_signing
 
-  properties = {}
+        store_file = ENV['ANDROID_STORE_FILE']
+        properties['android.injected.signing.store.file'] = store_file if !skip_signing && !blank?(store_file)
 
-  store_file = ENV['ANDROID_STORE_FILE']
-  properties['android.injected.signing.store.file'] = store_file if !skip_signing && !blank?(store_file)
+        store_password = ENV['ANDROID_STORE_PASSWORD_STAGING']
+        properties['android.injected.signing.store.password'] = store_password if !skip_signing && !blank?(store_password)
 
-  store_password = ENV['ANDROID_STORE_PASSWORD']
-  properties['android.injected.signing.store.password'] = store_password if !skip_signing && !blank?(store_password)
+        key_alias = ENV['ANDROID_KEY_ALIAS_STAGING']
+        properties['android.injected.signing.key.alias'] = key_alias if !skip_signing && !blank?(key_alias)
 
-  key_alias = ENV['ANDROID_KEY_ALIAS']
-  properties['android.injected.signing.key.alias'] = key_alias if !skip_signing && !blank?(key_alias)
+        key_password = ENV['ANDROID_KEY_PASSWORD_STAGING']
+        properties['android.injected.signing.key.password'] = key_password if !skip_signing && !blank?(key_password)
 
-  key_password = ENV['ANDROID_KEY_PASSWORD']
-  properties['android.injected.signing.key.password'] = key_password if !skip_signing && !blank?(key_password)
+        if options[:firebase]
+            latest_release = firebase_app_distribution_get_latest_release(
+              app: ENV['FIREBASE_APP_ID_STAGING'],
+              service_credentials_file: ENV['GOOGLE_JSON_FILE']
+            )
+            build_number = ENV['APP_BUILD_NUMBER_STAGING']
+            is_build_number_valid = !blank?(build_number) && !Integer(build_number.strip, exception: false).nil?
+            properties['versionCode'] = is_build_number_valid == true ? build_number : latest_release[:buildVersion].to_i + 1
+        else
+            productionVersionCodes = safe_fetch_version_codes(ENV['ANDROID_PACKAGE_NAME_STAGING'],'production')
+            betaVersionCodes = safe_fetch_version_codes(ENV['ANDROID_PACKAGE_NAME_STAGING'], 'beta')
+            alphaVersionCodes = safe_fetch_version_codes(ENV['ANDROID_PACKAGE_NAME_STAGING'], 'alpha')
+            internalVersionCodes = safe_fetch_version_codes(ENV['ANDROID_PACKAGE_NAME_STAGING'], 'internal')
 
-  if options[:firebase]
-    latest_release = firebase_app_distribution_get_latest_release(
-      app: ENV['FIREBASE_APP_ID'],
-      service_credentials_file: ENV['GOOGLE_JSON_FILE']
-    )
-    build_number = ENV['APP_BUILD_NUMBER']
-    is_build_number_valid = !blank?(build_number) && !Integer(build_number.strip, exception: false).nil?
-    properties['versionCode'] = is_build_number_valid == true ? build_number : latest_release[:buildVersion].to_i + 1
-  else
-    productionVersionCodes = safe_fetch_version_codes(ENV['ANDROID_PACKAGE_NAME'],'production')
-    betaVersionCodes = safe_fetch_version_codes(ENV['ANDROID_PACKAGE_NAME'], 'beta')
-    alphaVersionCodes = safe_fetch_version_codes(ENV['ANDROID_PACKAGE_NAME'], 'alpha')
-    internalVersionCodes = safe_fetch_version_codes(ENV['ANDROID_PACKAGE_NAME'], 'internal')
+            versionCodes = [
+              productionVersionCodes,
+              betaVersionCodes,
+              alphaVersionCodes,
+              internalVersionCodes
+            ].reduce([], :concat)
 
-    versionCodes = [
-      productionVersionCodes,
-      betaVersionCodes,
-      alphaVersionCodes,
-      internalVersionCodes
-    ].reduce([], :concat)
+            build_number = ENV['APP_BUILD_NUMBER_STAGING']
+            is_build_number_valid = !blank?(build_number) && !Integer(build_number.strip, exception: false).nil?
+            properties['versionCode'] = is_build_number_valid == true ? build_number : versionCodes.max + 1
+        end
 
-    build_number = ENV['APP_BUILD_NUMBER']
-    is_build_number_valid = !blank?(build_number) && !Integer(build_number.strip, exception: false).nil?
-    properties['versionCode'] = is_build_number_valid == true ? build_number : versionCodes.max + 1
-  end
+        build_name = ENV['APP_BUILD_NAME_STAGING']
+        is_build_name_valid = !blank?(build_name)
+        properties['versionName'] = build_name if is_build_name_valid
 
-  build_name = ENV['APP_BUILD_NAME']
-  is_build_name_valid = !blank?(build_name)
-  properties['versionName'] = build_name if is_build_name_valid
+        properties
+    else
+        skip_signing = parse_boolean(ENV['ANDROID_SKIP_SIGNING'], false)
 
-  properties
+        android_env_vars = %w[ANDROID_STORE_FILE ANDROID_STORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD]
+        ensure_env_vars(env_vars: android_env_vars) unless skip_signing
+
+        store_file = ENV['ANDROID_STORE_FILE']
+        properties['android.injected.signing.store.file'] = store_file if !skip_signing && !blank?(store_file)
+
+        store_password = ENV['ANDROID_STORE_PASSWORD']
+        properties['android.injected.signing.store.password'] = store_password if !skip_signing && !blank?(store_password)
+
+        key_alias = ENV['ANDROID_KEY_ALIAS']
+        properties['android.injected.signing.key.alias'] = key_alias if !skip_signing && !blank?(key_alias)
+
+        key_password = ENV['ANDROID_KEY_PASSWORD']
+        properties['android.injected.signing.key.password'] = key_password if !skip_signing && !blank?(key_password)
+
+        if options[:firebase]
+          latest_release = firebase_app_distribution_get_latest_release(
+            app: ENV['FIREBASE_APP_ID'],
+            service_credentials_file: ENV['GOOGLE_JSON_FILE']
+          )
+          build_number = ENV['APP_BUILD_NUMBER']
+          is_build_number_valid = !blank?(build_number) && !Integer(build_number.strip, exception: false).nil?
+          properties['versionCode'] = is_build_number_valid == true ? build_number : latest_release[:buildVersion].to_i + 1
+        else
+          productionVersionCodes = safe_fetch_version_codes(ENV['ANDROID_PACKAGE_NAME'],'production')
+          betaVersionCodes = safe_fetch_version_codes(ENV['ANDROID_PACKAGE_NAME'], 'beta')
+          alphaVersionCodes = safe_fetch_version_codes(ENV['ANDROID_PACKAGE_NAME'], 'alpha')
+          internalVersionCodes = safe_fetch_version_codes(ENV['ANDROID_PACKAGE_NAME'], 'internal')
+
+          versionCodes = [
+            productionVersionCodes,
+            betaVersionCodes,
+            alphaVersionCodes,
+            internalVersionCodes
+          ].reduce([], :concat)
+
+          build_number = ENV['APP_BUILD_NUMBER']
+          is_build_number_valid = !blank?(build_number) && !Integer(build_number.strip, exception: false).nil?
+          properties['versionCode'] = is_build_number_valid == true ? build_number : versionCodes.max + 1
+        end
+
+        build_name = ENV['APP_BUILD_NAME']
+        is_build_name_valid = !blank?(build_name)
+        properties['versionName'] = build_name if is_build_name_valid
+    end
+    properties
 end
 
 def parse_boolean(value, default)
