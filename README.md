@@ -90,7 +90,6 @@
 | `GOOGLE_JSON_KEY_BASE64`            | (Required) Google service credential key json file encoded as base64 | [Fastlane Docs](https://docs.fastlane.tools/getting-started/android/setup/)                                           |
 | `FIREBASE_APP_ID`           | (Required) Firebase App ID                                  | Can be fetched from project settings in Firebase console |
 | `FIREBASE_GROUPS`           | (Optional) Firebase Test Groups                              | Example: "qa-team, trusted-testers" |
-| `FIREBASE_RELEASE_NOTES`    | (Optional) Firebase build release notes, this defaults to the latest Github commit | Example: "New exciting features!" |
 
 6. **You'll have something similar to the below screenshot:**
 <img width="998" alt="image" src="https://github.com/shedeed1/EA_CI_CD/assets/26841936/1a180bed-86a9-4c2c-889c-bf73bd56a8f6">
