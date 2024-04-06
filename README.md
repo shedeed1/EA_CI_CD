@@ -102,6 +102,6 @@
 PS`           | (Optional) Firebase Test Groups                              | Example: "qa-team, trusted-testers" |
 
 7. **You'll have something similar to the below screenshot:**
-<img width="998" alt="image" src="https://github.com/shedeed1/EA_CI_CD/assets/26841936/1a180bed-86a9-4c2c-889c-bf73bd56a8f6">
+<img width="750" alt="image" src="https://github.com/shedeed1/EA_CI_CD/assets/26841936/75c7e14f-a6e1-4d7e-a798-2b7df6c5402c">
 
 8. **By default, the pipeline is triggered on every commit, staging builds go to Firebase App Distribution while production builds go to Google Play**
