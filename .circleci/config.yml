@@ -1,15 +1,38 @@
 version: 2.1
 
-orbs:
-  ruby: circleci/ruby@2.1.1 # Use the latest version of the ruby orb for Ruby tasks
-
 jobs:
   build-and-release-android:
     docker:
-      - image: cimg/android:2024.01
+      - image: cimg/android:2022.12.1
     steps:
       - checkout
-      - ruby/install-deps
+      - run:
+          name: Install Ruby 3.3
+          command: |
+            sudo apt update
+            sudo apt install -y autoconf bison build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm6 libgdbm-dev libdb-dev
+            git clone https://github.com/rbenv/rbenv.git ~/.rbenv
+            echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bashrc
+            echo 'eval "$(rbenv init -)"' >> ~/.bashrc
+            export PATH="$HOME/.rbenv/bin:$PATH"
+            eval "$(rbenv init -)"
+            git clone https://github.com/rbenv/ruby-build.git ~/.rbenv/plugins/ruby-build
+      - run:
+          name: Install Bundler
+          command: |
+            export PATH="$HOME/.rbenv/bin:$PATH"
+            eval "$(rbenv init -)"
+            rbenv install 3.3.0
+            rbenv global 3.3.0
+            cd /var/lib
+            sudo chmod -R a+w gems/
+            gem install bundler -v 2.5.6
+
+      - run:
+          name: Install Gems
+          command: |
+            bundle install
+
       - run:
           name: Read File and Set Env Var
           command: |
@@ -39,9 +62,17 @@ jobs:
             source $BASH_ENV
 
       - run:
+          name: Install OpenJDK 17
+          command: |
+            sudo apt-get update && sudo apt-get install openjdk-17-jdk
+
+      - run:
           name: Assemble and Upload to Firebase
           command: |
             if [ "$CIRCLECI_FLAVOR" = "staging" ]; then
+              echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> $BASH_ENV
+              echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
+              source $BASH_ENV
               bundle exec fastlane android deploy_firebase
             fi
           environment:
@@ -52,6 +83,9 @@ jobs:
           name: Assemble and Upload to PlayStore
           command: |
             if [ "$CIRCLECI_FLAVOR" = "production" ]; then
+              echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> $BASH_ENV
+              echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
+              source $BASH_ENV
               bundle exec fastlane android deploy_google_play
             fi
           environment:
