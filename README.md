@@ -29,19 +29,19 @@
 
 | Input                       | Description                       | Reference                                                                                              |
 |-----------------------------|-----------------------------------|--------------------------------------------------------------------------------------------------------|
-| `APP_BUILD_NUMBER`          | Application build number         | Specify app build number, if not specified it will increment the latest version code on Firebase/Play Store  |
-| `APP_BUILD_NAME`        | Android build name      |                              |
-| `ANDROID_PACKAGE_NAME`   | Android package name | Format: com.abc.xyz, can be found in app build.gradle file                     |
-| `ANDROID_FLAVOR`        | Android build flavor            | Can be staging or production                         |
-| `ANDROID_SKIP_SIGNING`    | Whether to skip app signing or not |    |
-| `ANDROID_STORE_FILE`           | Android Keystore file path | [Android Signing Docs](https://developer.android.com/studio/publish/app-signing)                  |
-| `ANDROID_STORE_PASSWORD`                 | Android keystore password | [Android Signing Docs](https://developer.android.com/studio/publish/app-signing)                  |
-| `ANDROID_KEY_ALIAS`              | Android Key Alias       | [Android Signing Docs](https://developer.android.com/studio/publish/app-signing)                                                                                                       |
-| `ANDROID_KEY_PASSWORD` | Android Key Password | [Android Signing Docs](https://developer.android.com/studio/publish/app-signing) |
-| `GOOGLE_JSON_FILE`            | Google service credential key json file path | [Fastlane Docs](https://docs.fastlane.tools/getting-started/android/setup/)                                           |
-| `FIREBASE_APP_ID`           | Firebase App ID                                  | Can be fetched from project settings in Firebase console |
-| `FIREBASE_GROUPS`           | Firebase Test Groups                              | Example: "qa-team, trusted-testers" |
-| `FIREBASE_RELEASE_NOTES`    | Firebase build release notes                              | Example: "New exciting features!" |
+| `APP_BUILD_NUMBER`          | (Optional) Application build number         | Specify app build number, if not specified it will increment the latest version code on Firebase/Play Store  |
+| `APP_BUILD_NAME`        | (Optional) Android build name      | Specify app build name, if not specified, it will use the build.gradle build name                             |
+| `ANDROID_PACKAGE_NAME`   | (Required) Android package name | Format: com.abc.xyz, can be found in app build.gradle file                     |
+| `ANDROID_FLAVOR`        | (Required) Android build flavor for local builds            | Can be staging or production                         |
+| `ANDROID_SKIP_SIGNING`    | (Optional) Whether to skip app signing or not |    | Can be true to skip signing or false to not to skip
+| `ANDROID_STORE_FILE`           | (Required) Android Keystore file path | [Android Signing Docs](https://developer.android.com/studio/publish/app-signing)                  |
+| `ANDROID_STORE_PASSWORD`                 | (Required) Android keystore password | [Android Signing Docs](https://developer.android.com/studio/publish/app-signing)                  |
+| `ANDROID_KEY_ALIAS`              | (Required) Android Key Alias       | [Android Signing Docs](https://developer.android.com/studio/publish/app-signing)                                                                                                       |
+| `ANDROID_KEY_PASSWORD` | (Required) Android Key Password | [Android Signing Docs](https://developer.android.com/studio/publish/app-signing) |
+| `GOOGLE_JSON_FILE`            | (Required) Google service credential key json file path | [Fastlane Docs](https://docs.fastlane.tools/getting-started/android/setup/)                                           |
+| `FIREBASE_APP_ID`           | (Required) Firebase App ID                                  | Can be fetched from project settings in Firebase console |
+| `FIREBASE_GROUPS`           | (Optional) Firebase Test Groups                              | Example: "qa-team, trusted-testers" |
+| `FIREBASE_RELEASE_NOTES`    | (Optional) Firebase build release notes                              | Example: "New exciting features!" |
 
 
 ## How to Run the Fastlane script
@@ -73,25 +73,34 @@
    - Make sure you follow the instructions so that your Github repo is connected to your CircleCI project
 
 3. **Make sure you place the config.yml file in your .circleci folder**
-4. **Navigate to CircleCI project settings then "Environment Variables" from the left panel**
-5. **Make sure you enter all of the data in the below table as environment variables:**
+4. **Create .circleci_flavor in your project root folder and write "staging" or "production" in the file based on your desired flavor**
+5. **Navigate to CircleCI project settings then "Environment Variables" from the left panel**
+6. **Make sure you enter all of the data in the below table as environment variables (including variables for staging environment):**
 
 | Input                       | Description                       | Reference                                                                                              |
 |-----------------------------|-----------------------------------|--------------------------------------------------------------------------------------------------------|
 | `APP_BUILD_NUMBER`          | (Optional) Application build number         | Specify app build number, if not specified it will increment the latest version code on Firebase/Play Store  |
-| `APP_BUILD_NAME`        | (Required) Android build name      |                              |
+| `APP_BUILD_NUMBER_STAGING`          | (Optional) Application build number         | Specify app build number, if not specified it will increment the latest version code on Firebase/Play Store  |
+| `APP_BUILD_NAME`        | (Optional) Android build name      | Specify app build name, if not specified, it will use the build.gradle build name    |
+| `APP_BUILD_NAME_STAGING`        | (Optional) Android build name      | Specify app build name, if not specified, it will use the build.gradle build name    |
 | `ANDROID_PACKAGE_NAME`   | (Required) Android package name | Format: com.abc.xyz, can be found in app build.gradle file                     |
-| `ANDROID_FLAVOR`        | (Required) Android build flavor            | Can be staging or production                         |
+| `ANDROID_PACKAGE_NAME_STAGING`   | (Required) Android package name | Format: com.abc.xyz, can be found in app build.gradle file                     |
 | `ANDROID_SKIP_SIGNING`    | (Optional) Whether to skip app signing or not |    |
+| `ANDROID_SKIP_SIGNING_STAGING`    | (Optional) Whether to skip app signing or not |    |
 | `ANDROID_KEYSTORE_BASE64`           | (Required) Android Keystore file encoded as base64 string | [Android Signing Docs](https://developer.android.com/studio/publish/app-signing)                  |
+| `ANDROID_KEYSTORE_BASE64_STAGING`           | (Required) Android Keystore file encoded as base64 string | [Android Signing Docs](https://developer.android.com/studio/publish/app-signing)                  |
 | `ANDROID_STORE_PASSWORD`                 | (Required) Android keystore password | [Android Signing Docs](https://developer.android.com/studio/publish/app-signing)                  |
+| `ANDROID_STORE_PASSWORD_STAGING`                 | (Required) Android keystore password | [Android Signing Docs](https://developer.android.com/studio/publish/app-signing)                  |
 | `ANDROID_KEY_ALIAS`              | (Required) Android Key Alias       | [Android Signing Docs](https://developer.android.com/studio/publish/app-signing)                                                                                                       |
+| `ANDROID_KEY_ALIAS_STAGING`              | (Required) Android Key Alias       | [Android Signing Docs](https://developer.android.com/studio/publish/app-signing)                                                                                                       |
 | `ANDROID_KEY_PASSWORD` | (Required) Android Key Password | [Android Signing Docs](https://developer.android.com/studio/publish/app-signing) |
+| `ANDROID_KEY_PASSWORD_STAGING` | (Required) Android Key Password | [Android Signing Docs](https://developer.android.com/studio/publish/app-signing) |
 | `GOOGLE_JSON_KEY_BASE64`            | (Required) Google service credential key json file encoded as base64 | [Fastlane Docs](https://docs.fastlane.tools/getting-started/android/setup/)                                           |
 | `FIREBASE_APP_ID`           | (Required) Firebase App ID                                  | Can be fetched from project settings in Firebase console |
+| `FIREBASE_APP_ID_STAGING`           | (Required) Firebase App ID                                  | Can be fetched from project settings in Firebase console |
 | `FIREBASE_GROUPS`           | (Optional) Firebase Test Groups                              | Example: "qa-team, trusted-testers" |
 
-6. **You'll have something similar to the below screenshot:**
-<img width="998" alt="image" src="https://github.com/shedeed1/EA_CI_CD/assets/26841936/1a180bed-86a9-4c2c-889c-bf73bd56a8f6">
+7. **You'll have something similar to the below screenshot:**
+<img width="750" alt="image" src="https://github.com/shedeed1/EA_CI_CD/assets/26841936/75c7e14f-a6e1-4d7e-a798-2b7df6c5402c">
 
-7. **By default, the pipeline is triggered on every commit**
+8. **By default, the pipeline is triggered on every commit, staging builds go to Firebase App Distribution while production builds go to Google Play**
