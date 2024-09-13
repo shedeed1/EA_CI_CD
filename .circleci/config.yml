@@ -36,7 +36,12 @@ jobs:
       - run:
           name: Read File and Set Env Var
           command: |
-            echo 'export CIRCLECI_FLAVOR=$(cat .circleci_flavor)' >> $BASH_ENV
+            CIRCLECI_FLAVOR=$(cat .circleci_flavor)
+            if [ -z "$CIRCLECI_FLAVOR" ]; then
+              CIRCLECI_FLAVOR="both"
+            fi
+            echo "Flavor: '$CIRCLECI_FLAVOR'"
+            echo 'export CIRCLECI_FLAVOR='$CIRCLECI_FLAVOR >> $BASH_ENV
             source $BASH_ENV
 
       - run:
@@ -47,10 +52,11 @@ jobs:
       - run:
           name: Setup Android Keystore
           command: |
-            if [ "$CIRCLECI_FLAVOR" = "staging" ]; then
-              echo "$ANDROID_KEYSTORE_BASE64_STAGING" | base64 --decode > /home/circleci/__keystore.jks
-            else
-              echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > /home/circleci/__keystore.jks
+            if [ "$CIRCLECI_FLAVOR" = "staging" ] || [ "$CIRCLECI_FLAVOR" = "both" ]; then
+              echo "$ANDROID_KEYSTORE_BASE64_STAGING" | base64 --decode > /home/circleci/__keystore_staging.jks
+            fi
+            if [ "$CIRCLECI_FLAVOR" = "production" ] || [ "$CIRCLECI_FLAVOR" = "both" ]; then
+              echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > /home/circleci/__keystore_production.jks
             fi
 
       - run:
@@ -69,29 +75,28 @@ jobs:
       - run:
           name: Assemble and Upload to Firebase
           command: |
-            if [ "$CIRCLECI_FLAVOR" = "staging" ]; then
+            if [ "$CIRCLECI_FLAVOR" = "staging" ] || [ "$CIRCLECI_FLAVOR" = "both" ]; then
               echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> $BASH_ENV
               echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
+              echo 'export ANDROID_STORE_FILE=/home/circleci/__keystore_staging.jks' >> $BASH_ENV
               source $BASH_ENV
               bundle exec fastlane android deploy_firebase
             fi
           environment:
             GOOGLE_JSON_FILE: /home/circleci/__google_credentials.json
-            ANDROID_STORE_FILE: /home/circleci/__keystore.jks
 
       - run:
           name: Assemble and Upload to PlayStore
           command: |
-            if [ "$CIRCLECI_FLAVOR" = "production" ]; then
+            if [ "$CIRCLECI_FLAVOR" = "production" ] || [ "$CIRCLECI_FLAVOR" = "both" ]; then
               echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> $BASH_ENV
               echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
+              echo 'export ANDROID_STORE_FILE=/home/circleci/__keystore_production.jks' >> $BASH_ENV
               source $BASH_ENV
               bundle exec fastlane android deploy_google_play
             fi
           environment:
             GOOGLE_JSON_FILE: /home/circleci/__google_credentials.json
-            ANDROID_STORE_FILE: /home/circleci/__keystore.jks
-
 
 workflows:
   version: 2
