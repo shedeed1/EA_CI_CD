@@ -14,7 +14,7 @@ platform :android do
 
     task = 'assemble'
     build_type = 'Release'
-    circleci_flavor = is_ci ? File.read("../.circleci_flavor") : nil
+    circleci_flavor = is_ci ? ENV['CIRCLECI_FLAVOR'] : nil
     flavor = ENV['ANDROID_FLAVOR']
     properties = get_build_properties(firebase: true, circleci_flavor: circleci_flavor)
 
@@ -46,7 +46,7 @@ platform :android do
 
     task = 'assemble'
     build_type = 'Release'
-    circleci_flavor = is_ci ? File.read("../.circleci_flavor") : nil
+    circleci_flavor = is_ci ? ENV['CIRCLECI_FLAVOR'] : nil
     flavor = ENV['ANDROID_FLAVOR']
     properties = get_build_properties(circleci_flavor: circleci_flavor)
 
