@@ -80,6 +80,7 @@ jobs:
               echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
               echo 'export ANDROID_STORE_FILE=/home/circleci/__keystore_staging.jks' >> $BASH_ENV
               echo 'export BUILD_VARIANT=staging' >> $BASH_ENV
+              echo 'export CIRCLECI_FLAVOR=staging' >> $BASH_ENV
               source $BASH_ENV
               bundle exec fastlane android deploy_firebase
             fi
@@ -94,6 +95,7 @@ jobs:
               echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
               echo 'export ANDROID_STORE_FILE=/home/circleci/__keystore_production.jks' >> $BASH_ENV
               echo 'export BUILD_VARIANT=production' >> $BASH_ENV
+              echo 'export CIRCLECI_FLAVOR=production' >> $BASH_ENV
               source $BASH_ENV
               bundle exec fastlane android deploy_firebase
             fi
@@ -107,6 +109,7 @@ jobs:
               echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> $BASH_ENV
               echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
               echo 'export ANDROID_STORE_FILE=/home/circleci/__keystore_production.jks' >> $BASH_ENV
+              echo 'export CIRCLECI_FLAVOR=production' >> $BASH_ENV
               source $BASH_ENV
               bundle exec fastlane android deploy_google_play
             fi
