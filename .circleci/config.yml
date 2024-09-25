@@ -42,6 +42,7 @@ jobs:
             fi
             echo "Flavor: '$CIRCLECI_FLAVOR'"
             echo 'export CIRCLECI_FLAVOR='$CIRCLECI_FLAVOR >> $BASH_ENV
+            echo 'export BUILD_CIRCLECI_FLAVOR='$CIRCLECI_FLAVOR >> $BASH_ENV
             source $BASH_ENV
 
       - run:
@@ -52,10 +53,10 @@ jobs:
       - run:
           name: Setup Android Keystore
           command: |
-            if [ "$CIRCLECI_FLAVOR" = "staging" ] || [ "$CIRCLECI_FLAVOR" = "both" ] || [ "$CIRCLECI_FLAVOR" = "firebase_both" ]; then
+            if [ "$BUILD_CIRCLECI_FLAVOR" = "staging" ] || [ "$BUILD_CIRCLECI_FLAVOR" = "both" ] || [ "$BUILD_CIRCLECI_FLAVOR" = "firebase_both" ]; then
               echo "$ANDROID_KEYSTORE_BASE64_STAGING" | base64 --decode > /home/circleci/__keystore_staging.jks
             fi
-            if [ "$CIRCLECI_FLAVOR" = "production" ] || [ "$CIRCLECI_FLAVOR" = "both" ] || [ "$CIRCLECI_FLAVOR" = "firebase_both" ]; then
+            if [ "$BUILD_CIRCLECI_FLAVOR" = "production" ] || [ "$BUILD_CIRCLECI_FLAVOR" = "both" ] || [ "$BUILD_CIRCLECI_FLAVOR" = "firebase_both" ]; then
               echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > /home/circleci/__keystore_production.jks
             fi
 
@@ -75,7 +76,7 @@ jobs:
       - run:
           name: Assemble and Upload Staging to Firebase
           command: |
-            if [ "$CIRCLECI_FLAVOR" = "staging" ] || [ "$CIRCLECI_FLAVOR" = "both" ] || [ "$CIRCLECI_FLAVOR" = "firebase_both" ]; then
+            if [ "$BUILD_CIRCLECI_FLAVOR" = "staging" ] || [ "$BUILD_CIRCLECI_FLAVOR" = "both" ] || [ "$BUILD_CIRCLECI_FLAVOR" = "firebase_both" ]; then
               echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> $BASH_ENV
               echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
               echo 'export ANDROID_STORE_FILE=/home/circleci/__keystore_staging.jks' >> $BASH_ENV
@@ -90,7 +91,7 @@ jobs:
       - run:
           name: Assemble and Upload Production to Firebase
           command: |
-            if [ "$CIRCLECI_FLAVOR" = "production" ] || [ "$CIRCLECI_FLAVOR" = "both" ] || [ "$CIRCLECI_FLAVOR" = "firebase_both" ]; then
+            if [ "$BUILD_CIRCLECI_FLAVOR" = "production" ] || [ "$BUILD_CIRCLECI_FLAVOR" = "both" ] || [ "$BUILD_CIRCLECI_FLAVOR" = "firebase_both" ]; then
               echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> $BASH_ENV
               echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
               echo 'export ANDROID_STORE_FILE=/home/circleci/__keystore_production.jks' >> $BASH_ENV
@@ -105,7 +106,7 @@ jobs:
       - run:
           name: Assemble and Upload to PlayStore
           command: |
-            if [ "$CIRCLECI_FLAVOR" = "production" ] || [ "$CIRCLECI_FLAVOR" = "both" ]; then
+            if [ "$BUILD_CIRCLECI_FLAVOR" = "production" ] || [ "$BUILD_CIRCLECI_FLAVOR" = "both" ]; then
               echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> $BASH_ENV
               echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
               echo 'export ANDROID_STORE_FILE=/home/circleci/__keystore_production.jks' >> $BASH_ENV
