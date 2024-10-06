@@ -26,7 +26,7 @@ platform :android do
     )
 
     firebase_app_distribution(
-      app: ENV['FIREBASE_APP_ID'],
+      app: is_ci && circleci_flavor == 'staging' ? ENV['FIREBASE_APP_ID_STAGING'] : ENV['FIREBASE_APP_ID'],
       service_credentials_file: ENV['GOOGLE_JSON_FILE'],
       android_artifact_type: 'APK',
       release_notes: ENV["FIREBASE_RELEASE_NOTES"] || "",
@@ -90,7 +90,7 @@ private_lane :get_build_properties do |options|
 
         if options[:firebase]
             latest_release = firebase_app_distribution_get_latest_release(
-              app: ENV['FIREBASE_APP_ID_STAGING'],
+              app: is_ci && ENV['CIRCLECI_FLAVOR'] == 'staging' ? ENV['FIREBASE_APP_ID_STAGING'] : ENV['FIREBASE_APP_ID'],
               service_credentials_file: ENV['GOOGLE_JSON_FILE']
             )
             build_number = ENV['APP_BUILD_NUMBER_STAGING']
@@ -139,7 +139,7 @@ private_lane :get_build_properties do |options|
 
         if options[:firebase]
           latest_release = firebase_app_distribution_get_latest_release(
-            app: ENV['FIREBASE_APP_ID'],
+            app: is_ci && ENV['CIRCLECI_FLAVOR'] == 'staging' ? ENV['FIREBASE_APP_ID_STAGING'] : ENV['FIREBASE_APP_ID'],
             service_credentials_file: ENV['GOOGLE_JSON_FILE']
           )
           build_number = ENV['APP_BUILD_NUMBER']
